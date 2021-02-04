@@ -1,7 +1,7 @@
 import axios from 'axios'
 // Old version.
-// const baseUrl = 'http://localhost:3001/persons'
 const baseUrl = 'http://localhost:3001/api/persons'
+//const baseUrl = 'https://frozen-eyrie-77689.herokuapp.com/api/persons'
 
 // get all
 const getAll = () => {

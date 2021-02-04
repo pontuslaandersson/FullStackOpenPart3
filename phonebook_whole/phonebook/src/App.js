@@ -9,7 +9,7 @@ import numberService from './services/numbers'
 
 
 const App = () => {
-  const [persons, setPersons] = useState([])
+  const [ persons, setPersons ] = useState([])
   const [ newName, setNewName ] = useState('')
   const [ newNumber, setNewNumber ] = useState('')
   const [ newFilter, setNewFilter ] = useState('')
@@ -37,7 +37,7 @@ const App = () => {
 		if (persons.find( ({ name }) => name === newName )){
 			/*alert(`${newName} is already added to phonebook`)
 			setNewName('')*/
-			let r= window.confirm(`${newName} is already in the phonebook. Would you like to update the number for ${newName}?`);
+			let r = window.confirm(`${newName} is already in the phonebook. Would you like to update the number for ${newName}?`);
 			if (r === true) {
 				console.log("User pressed OK.");
 				const person = persons.find(p => p.name === newName)
@@ -78,12 +78,11 @@ const App = () => {
 		else {
 		const personObject = {
 			name: newName,
-			number: newNumber,
-			id: newName,
+			number: newNumber
 		}
 		//setPersons(persons.concat(personObject))
 		console.log('Add button clicked.', event.target);
-		console.log('ID: ', personObject.id);
+		console.log(`name: ${personObject.name}; number: ${personObject.number}`);
 		numberService
 		.create(personObject)
 		.then(returnedPerson => {

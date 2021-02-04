@@ -1,10 +1,13 @@
 //const http = require('http')
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
 app.use(cors())
 app.use(express.json())
+app.use(express.static('build'))
+const Person = require('./models/person')
 morgan.token('post-content', (request, response) => {
     if (request.method === 'POST') {
         return JSON.stringify(request.body)
@@ -13,7 +16,7 @@ morgan.token('post-content', (request, response) => {
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-content'))
 
-let persons = [
+/*let persons = [
 	{
 	  name: "Touho",
       number: "444-4444-4444",
@@ -39,7 +42,7 @@ let persons = [
 		number: "888-8888-8888",
 		id: 5
 	}
-  ]
+  ]*/
 
 /*const app = http.createServer((request, response) => {
   response.writeHead(200, { 'Content-Type': 'application/json' })
@@ -47,11 +50,17 @@ let persons = [
   response.end(JSON.stringify(notes))
 })*/
 app.get('/', (request, response) => {
-	response.send('<h1>Hello Dummy!</h1>')
+	response.send('<h1>Hello from MongoDB backend!</h1>')
   })
   
-app.get('/api/persons', (request, response) => {
+/*app.get('/api/persons', (request, response) => {
 	response.json(persons)
+  })*/
+
+  app.get('/api/persons', (request, response) => {
+	Person.find({}).then(persons => {
+	  response.json(persons)
+	})
   })
 
 app.get('/api/persons/info', (request, response) => {
@@ -61,7 +70,7 @@ app.get('/api/persons/info', (request, response) => {
 					<div>${Date()}</div>`)
 	})
 
-app.get('/api/persons/:id', (request, response) => {
+/*app.get('/api/persons/:id', (request, response) => {
 	const id = Number(request.params.id)
 	console.log(id)
 	const person = persons.find(person => person.id === id)
@@ -70,13 +79,12 @@ app.get('/api/persons/:id', (request, response) => {
 	  } else {
 		response.status(404).end()
 	  }
-  })
+  })*/
 
-app.delete('/api/persons/:id', (request, response) => {
-	const id = Number(request.params.id)
-	persons = persons.filter(person => person.id !== id)
-  
-	response.status(204).end()
+  app.get('/api/persons/:id', (request, response) => {
+	Person.findById(request.params.id).then(person => {
+	  response.json(person.toJSON())
+	})
   })
 
   // Should be Math.random()
@@ -91,7 +99,7 @@ app.delete('/api/persons/:id', (request, response) => {
 	return(Math.floor(Math.random() * 1000) + 1);
   }
   
-  app.post('/api/persons', (request, response) => {
+  /*app.post('/api/persons', (request, response) => {
 	const body = request.body
 	if (persons.find( ({ name }) => name === body.name )) {
 		return response.status(400).json({ 
@@ -119,11 +127,56 @@ app.delete('/api/persons/:id', (request, response) => {
 	persons = persons.concat(person)
   
 	response.json(person)
+  })*/
+
+  app.post('/api/persons', (request, response) => {
+	const body = request.body
+	if (!body.name) {
+		return response.status(400).json({ 
+		  error: 'name missing' 
+		})
+	  }
+	if (!body.number) {
+		return response.status(400).json({ 
+		error: 'number missing' 
+		})
+	}
+  
+	const person = new Person({
+		name: body.name,
+		number: body.number
+	})
+  
+	person.save().then(savedPerson => {
+	  response.json(savedPerson)
+	})
   })
 
+  app.put('/api/persons/:id', (request, response, next) => {
+	const body = request.body
+  
+	const person = {
+	  name: body.name,
+	  number: body.number,
+	}
+  
+	Person.findByIdAndUpdate(request.params.id, person, { new: true })
+	  .then(updatedPerson => {
+		response.json(updatedPerson)
+	  })
+	  .catch(error => next(error))
+  })
 
-  const PORT = process.env.PORT || 3001
-  app.listen(PORT, () => {
-	  console.log(`Server running on port ${PORT}`)
-	})
+  app.delete('/api/persons/:id', (request, response, next) => {
+	Person.findByIdAndRemove(request.params.id)
+	  .then(result => {
+		response.status(204).end()
+	  })
+	  .catch(error => next(error))
+  })
+
+  const PORT = process.env.PORT
+app.listen(PORT, () => {
+	console.log(`Server running on port ${PORT}`)
+  })
   
