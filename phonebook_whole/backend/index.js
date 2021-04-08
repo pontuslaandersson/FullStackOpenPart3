@@ -5,8 +5,8 @@ const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
 app.use(cors())
-app.use(express.json())
 app.use(express.static('build'))
+app.use(express.json())
 const Person = require('./models/person')
 morgan.token('post-content', (request, response) => {
     if (request.method === 'POST') {
@@ -16,39 +16,6 @@ morgan.token('post-content', (request, response) => {
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-content'))
 
-/*let persons = [
-	{
-	  name: "Touho",
-      number: "444-4444-4444",
-      id: 1
-	},
-	{
-		name: "Inti",
-		number: "555-5555-5555",
-		id: 2
-	},
-	{
-		name: "Talvi",
-		number: "666-6666-6666",
-		id: 3
-	},
-	{
-		name: "The Master",
-		number: "777-7777-7777",
-		id: 4
-	},
-	{
-		name: "The Dork",
-		number: "888-8888-8888",
-		id: 5
-	}
-  ]*/
-
-/*const app = http.createServer((request, response) => {
-  response.writeHead(200, { 'Content-Type': 'application/json' })
-  //response.end('Hello World')
-  response.end(JSON.stringify(notes))
-})*/
 app.get('/', (request, response) => {
 	response.send('<h1>Hello from MongoDB backend!</h1>')
   })
@@ -63,12 +30,16 @@ app.get('/', (request, response) => {
 	})
   })
 
+
+// FIX THIS! ${Person.count()}
 app.get('/api/persons/info', (request, response) => {
-	response.send(`
+	Person.find({}).then(persons => {
+		response.send(`
 			<div>Phonebook has info for ${persons.length} people.</div>
 			<br/>
 					<div>${Date()}</div>`)
 	})
+})
 
 /*app.get('/api/persons/:id', (request, response) => {
 	const id = Number(request.params.id)
@@ -81,10 +52,15 @@ app.get('/api/persons/info', (request, response) => {
 	  }
   })*/
 
-  app.get('/api/persons/:id', (request, response) => {
+  app.get('/api/persons/:id', (request, response, next) => {
 	Person.findById(request.params.id).then(person => {
-	  response.json(person.toJSON())
+	  if (person) {
+        response.json(person.toJSON())
+      } else {
+        response.status(404).end()
+      }
 	})
+	.catch(error => next(error))
   })
 
   // Should be Math.random()
@@ -180,3 +156,16 @@ app.listen(PORT, () => {
 	console.log(`Server running on port ${PORT}`)
   })
   
+
+  const errorHandler = (error, request, response, next) => {
+	console.error(error.message)
+  
+	if (error.name === 'CastError') {
+	  return response.status(400).send({ error: 'malformatted id' })
+	} 
+  
+	next(error)
+  }
+  
+  // this has to be the last loaded middleware.
+  app.use(errorHandler)
